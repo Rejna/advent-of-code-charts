@@ -62,7 +62,7 @@
         return [...Array(n).keys()].map(i => "hsl(" + i * 120 / n + ", 100%, 50%)")
     }
 
-    function adjustPoinstFor(year, dayKey, starKey, basePoints) {
+    function adjustPointsFor(year, dayKey, basePoints) {
         // https://github.com/jeroenheijmans/advent-of-code-charts/issues/18
         if (year === 2018 && dayKey === "6") {
             return 0;
@@ -83,7 +83,6 @@
         let members = Object.keys(json.members)
             .map(k => json.members[k])
             .map(m => {
-                let i = 0;
                 m.stars = [];
                 m.name = m.name || `(anonymous user ${m.id})`;
                 m.podiumStars = [];
@@ -141,7 +140,7 @@
 
         for (let star of orderedStars) {
             const basePoints = availablePoints[star.dayKey][star.starKey]--;
-            star.points = adjustPoinstFor(year, star.dayKey, star.starKey, basePoints);
+            star.points = adjustPointsFor(year, star.dayKey, basePoints);
             star.rank = n_members - basePoints + 1;
         }
 
@@ -384,7 +383,7 @@
                 console.info("Found cache", cache);
 
                 if (cache) {
-                    const ttl = new Date(cache.timestamp + (5 * 60 * 1000));
+                    const ttl = new Date(cache.timestamp + (15 * 60 * 1000));
                     console.info("Found cached value valid until", ttl);
 
                     if (Date.now() < ttl) {
@@ -492,7 +491,7 @@
 
             for (let d = 1; d <= data.maxDay; ++d) {
                 let a = titleElement.appendChild(document.createElement("a"));
-                a.innerText = " " + d.toString();
+                a.innerText = ` ${d}`;
                 a.addEventListener("click", () => {
                     setDisplayDay(d);
                     setVisible(d);
@@ -578,7 +577,7 @@
                     let td = tr.appendChild(document.createElement("td"));
 
                     // Part 1
-                    td = tr.appendChild(createHeaderCell("part1", "Time" + (getTimeTableSort() === "part1" ? " ⬇" : ""), "#9999cc"));
+                    td = tr.appendChild(createHeaderCell("part1", `Time${getTimeTableSort() === "part1" ? " ⬇" : ""}`, "#9999cc"));
                     if (getTimeTableSort() === "part1") {
                         td.style.color = "#9999ee";
                         td.style.textShadow = "0 0 5px #9999cc";
@@ -587,7 +586,7 @@
                     td = tr.appendChild(createHeaderCell("part1", "Points", "#9999cc"));
 
                     // Delta
-                    td = tr.appendChild(createHeaderCell("delta", "Delta Time" + (getTimeTableSort() === "delta" ? " ⬇" : "")));
+                    td = tr.appendChild(createHeaderCell("delta", `Delta Time${getTimeTableSort() === "delta" ? " ⬇" : ""}`));
                     td.title = "Time difference between Part 2 and Part 1";
                     if (getTimeTableSort() === "delta") {
                         td.style.color = "#ffffff";
@@ -595,7 +594,7 @@
                     }
 
                     // Part 2
-                    td = tr.appendChild(createHeaderCell("part2", "Time" + (getTimeTableSort() === "part2" ? " ⬇" : ""), "#ffff66"));
+                    td = tr.appendChild(createHeaderCell("part2", `Time${getTimeTableSort() === "part2" ? " ⬇" : ""}`, "#ffff66"));
                     if (getTimeTableSort() === "part2") {
                         td.style.color = "#ffff66";
                         td.style.textShadow = "0 0 5px #ffff66";
@@ -604,7 +603,7 @@
                     td = tr.appendChild(createHeaderCell("part2", "Points", "#ffff66"));
 
                     // Total
-                    td = tr.appendChild(createHeaderCell("completion", "Points" + (getTimeTableSort() === "completion" ? " ⬇" : "")));
+                    td = tr.appendChild(createHeaderCell("completion", `Points${getTimeTableSort() === "completion" ? " ⬇" : ""}`));
                     if (getTimeTableSort() === "completion") {
                         td.style.color = "#ffffff";
                         td.style.textShadow = "0 0 5px #ffffff";
@@ -643,7 +642,7 @@
                     rank += 1;
 
                     let tr = gridElement.appendChild(document.createElement("tr"));
-                    let td = tr.appendChild(createCell(rank.toString() + ". " + member.name))
+                    let td = tr.appendChild(createCell(`${rank}. ${member.name}`))
                     td.style.textAlign = "left";
 
                     td = tr.appendChild(createCell((memberStar1 ? formatTimeTaken(memberStar1.timeTakenSeconds) : "")))
@@ -711,7 +710,7 @@
                     tablePerDay[t].style.display = "none";
                 }
                 tablePerDay[day].style.display = "table";
-                
+
                 for (const a in anchorPerDay) {
                     anchorPerDay[a].style.color = "";
                     anchorPerDay[a].style.textShadow = "";
@@ -733,17 +732,22 @@
             const medalHtml = n => n === 0 ? "🥇" : n === 1 ? "🥈" : n === 2 ? "🥉" : `${n}`;
             const medalColor = n => n === 0 ? "gold" : n === 1 ? "silver" : n === 2 ? "#945210" : "rgba(15, 15, 35, 1.0)";
 
+            function sortByTotalPoints(a, b) {
+                let aPoints = a.stars.filter(s => s.dayNr == displayDay).reduce((acc, v) => acc + v.points, 0);
+                let bPoints = b.stars.filter(s => s.dayNr == displayDay).reduce((acc, v) => acc + v.points, 0);
+                return bPoints - aPoints;
+            }
+
             this.medals.title =
-              (isShowAllToggled()
+              `${(isShowAllToggled()
                 ? ''
-                : 'For each day, the top 3 to get the second star are shown. ') +
-              'Behind each medal you can get a glimpse of the podium for the *first* star.';
+                : 'For each day, the top 3 to get the second star are shown.')} Behind each medal you can get a glimpse of the podium for the *first* star.`;
             let titleElement = this.medals.appendChild(document.createElement("h3"));
             titleElement.innerText = "Podium per day: ";
             titleElement.style.fontFamily = "Helvetica, Arial, sans-serif";
             titleElement.style.fontWeight = "normal";
             titleElement.style.marginBottom = "4px";
-            
+
             const showAllToggleLink = titleElement.appendChild(document.createElement("a"));
             showAllToggleLink.innerText = isShowAllToggled() ? "🎄 Showing all participants" : "🥇 Showing only medalists";
             showAllToggleLink.title = "Toggle between showing only medalists or all participants";
@@ -756,12 +760,16 @@
 
             let grid = data.members;
 
+            // header
             let tr = gridElement.appendChild(document.createElement("tr"));
-            for (let d = 0; d <= 25; d++) {
+            for (let d = -2; d <= 25; d++) {
                 let td = tr.appendChild(document.createElement("td"));
-                td.innerText = d === 0 ? "" : d;
-                td.align = "center";
+                td.innerText = d === -1 ? "Stars" : (d === 0 ? "Local score" : (d === -2 ? "" : d));
+                td.style.textAlign = "center";
+                // t r b l
+                td.style.padding = "0px 8px 0px 8px";
             }
+
             tr.appendChild(document.createElement("td"));
             for (let n = 0; n < podiumLength; n++) {
                 let td = tr.appendChild(document.createElement("td"));
@@ -770,18 +778,35 @@
                 span.style.backgroundColor = medalColor(n);
                 span.style.padding = "1px";
                 td.style.padding = "4px";
-                td.align = "center";
+                td.style.textAlign = "center";
             }
 
+            // contents
+            let rank = 1;
             for (let member of grid.sort(memberByPodiumSorter)) {
                 let tr = document.createElement("tr");
                 let medalCount = 0;
 
+                // first column - name
                 let td = tr.appendChild(document.createElement("td"));
-                td.innerText = member.name;
+                td.innerText = `${rank}. ${member.name}`;
                 td.style.border = "1px solid #333";
                 td.style.padding = "2px 8px";
 
+                // second column - stars
+                let td2 = tr.appendChild(document.createElement("td"));
+                td2.innerText = member.stars.length;
+                td2.style.border = "1px solid #333";
+                td.style.padding = "2px 8px";
+                td2.style.textAlign = "center";
+
+                // third column - local score
+                let td3 = tr.appendChild(document.createElement("td"));
+                td3.innerText = member.local_score;
+                td3.style.border = "1px solid #333";
+                td3.style.textAlign = "center";
+
+                // medals
                 for (let d = 1; d <= 25; d++) {
                     let td = tr.appendChild(document.createElement("td"));
                     td.style.border = "1px solid #333";
@@ -831,17 +856,19 @@
                 let separator = tr.appendChild(document.createElement("td"));
                 separator.innerText = "\u00A0";
 
+                // medals summary
                 for (let n = 0; n < podiumLength; n++) {
                     let td = tr.appendChild(document.createElement("td"));
                     td.innerText = member.podiumPlacesPerDay[n];
                     td.style.border = "1px solid #333";
                     td.style.padding = "2px 8px";
-                    td.align = "center";
+                    td.style.textAlign = "center";
                 }
 
                 if (isShowAllToggled() || medalCount > 0) {
                     gridElement.appendChild(tr);
                 }
+                rank++;
             }
 
             this.medals.appendChild(gridElement);
@@ -849,7 +876,7 @@
             return data;
         }
 
-        createGraphCanvas(data, title = "") {
+        createGraphCanvas(title = "") {
             var element = document.createElement("canvas");
             if (isResponsivenessToggled()) {
                 element.style.maxWidth = window.matchMedia("(min-width: 1800px)").matches ? "50%" : "100%";
@@ -875,7 +902,7 @@
                 };
             });
 
-            let element = this.createGraphCanvas(data, "Log10 function of the time taken for each user to get the stars");
+            let element = this.createGraphCanvas("Log10 function of the time taken for each user to get the stars");
             this.graphs.appendChild(element);
 
             let chart = new Chart(element.getContext("2d"), {
@@ -981,8 +1008,8 @@
 
                 // Over 240 minutes? Then just nullify the data, we assume folks didn't try.
                 for (var i = 0; i < star1DataSet.data.length; i++) {
-                    if (star1DataSet.data[i] + star2DataSet.data[i] > 240) {
-                        if (star1DataSet.data[i] > 240) {
+                    if (star1DataSet.data[i] + star2DataSet.data[i] > 480) {
+                        if (star1DataSet.data[i] > 480) {
                             star1DataSet.data[i] = null;
                         }
                         star2DataSet.data[i] = null;
@@ -993,7 +1020,7 @@
                 datasets.push(star2DataSet);
             }
 
-            let element = this.createGraphCanvas(data, "From the top players, show the number of minutes taken each day. (Exclude results over 4 hours.)");
+            let element = this.createGraphCanvas("From the top players, show the number of minutes taken each day. (Exclude results over 4 hours.)");
             this.graphs.appendChild(element);
 
             let chart = new Chart(element.getContext("2d"), {
@@ -1078,7 +1105,7 @@
                 };
             });
 
-            let element = this.createGraphCanvas(data, "Points over time per member.");
+            let element = this.createGraphCanvas("Points over time per member.");
             this.graphs.appendChild(element);
 
             let chart = new Chart(element.getContext("2d"), {
@@ -1176,7 +1203,7 @@
                 }
             });
 
-            let element = this.createGraphCanvas(data, "Number of stars over time per member.");
+            let element = this.createGraphCanvas("Number of stars over time per member.");
             this.graphs.appendChild(element);
 
             let chart = new Chart(element.getContext("2d"), {
