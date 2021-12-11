@@ -124,12 +124,13 @@
             .filter(m => m.stars.length > 0)
             .sort((a, b) => a.name.localeCompare(b.name));
 
-        let allMoments = stars.map(s => s.getStarMoment).concat([moment("" + year + "-12-25T00:00:00-0000")]);
-        let maxMoment = moment.min([moment.max(allMoments), moment("" + year + "-12-31T00:00:00-0000")]);
+        let maxDay = Math.max.apply(Math, stars.filter(s => s.starNr === 2).map(s => s.dayNr));
+        let allMoments = stars.map(s => s.getStarMoment);
+        let maxMoment = moment.max(allMoments) + 60 * 60 * 24 * 1000;
 
         let availablePoints = {};
 
-        for (let i = 1; i <= 25; i++) {
+        for (let i = 1; i <= maxDay; i++) {
             availablePoints[i] = {};
             for (let j = 1; j <= 2; j++) {
                 availablePoints[i][j] = n_members;
@@ -153,7 +154,6 @@
             }
         }
 
-        let maxDay = Math.max.apply(Math, stars.filter(s => s.starNr === 2).map(s => s.dayNr))
         let days = {};
 
         for (let d = 1; d <= maxDay; d++) {
@@ -762,7 +762,7 @@
 
             // header
             let tr = gridElement.appendChild(document.createElement("tr"));
-            for (let d = -2; d <= 25; d++) {
+            for (let d = -2; d <= data.maxDay; d++) {
                 let td = tr.appendChild(document.createElement("td"));
                 td.innerText = d === -1 ? "Stars" : (d === 0 ? "Local score" : (d === -2 ? "" : d));
                 td.style.textAlign = "center";
@@ -807,7 +807,7 @@
                 td3.style.textAlign = "center";
 
                 // medals
-                for (let d = 1; d <= 25; d++) {
+                for (let d = 1; d <= data.maxDay; d++) {
                     let td = tr.appendChild(document.createElement("td"));
                     td.style.border = "1px solid #333";
                     td.style.padding = "3px 4px";
@@ -942,7 +942,7 @@
                         xAxes: [{
                             ticks: {
                                 min: 0,
-                                max: 25,
+                                max: data.maxDay + 0.5,
                                 stepSize: 1,
                                 fontColor: aocColors["main"],
                             },
@@ -998,7 +998,7 @@
                     data: [],
                 };
 
-                for (let i = 1; i <= 25; i++) {
+                for (let i = 1; i <= data.maxDay; i++) {
                     let star1 = data.stars.find(s => s.memberId === member.id && s.dayNr === i && s.starKey === "1");
                     let star2 = data.stars.find(s => s.memberId === member.id && s.dayNr === i && s.starKey === "2");
 
@@ -1020,13 +1020,13 @@
                 datasets.push(star2DataSet);
             }
 
-            let element = this.createGraphCanvas("From the top players, show the number of minutes taken each day. (Exclude results over 4 hours.)");
+            let element = this.createGraphCanvas("From the top players, show the number of minutes taken each day (excluding results over 8 hours).");
             this.graphs.appendChild(element);
 
             let chart = new Chart(element.getContext("2d"), {
                 type: "bar",
                 data: {
-                    labels: range(1, 26),
+                    labels: range(1, data.maxDay + 1),
                     datasets: datasets,
                 },
                 options: {
